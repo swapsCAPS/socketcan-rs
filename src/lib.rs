@@ -64,7 +64,7 @@ mod util;
 mod tests;
 
 use libc::{c_int, c_short, c_void, c_uint, c_ulong, socket, SOCK_RAW, close, bind, sockaddr, read,
-           write, SOL_SOCKET, SO_RCVTIMEO, timespec, timeval, EINPROGRESS, SO_SNDTIMEO, time_t,
+           write, SOL_SOCKET, SO_RCVTIMEO, timeval, EINPROGRESS, SO_SNDTIMEO, time_t,
            suseconds_t, fcntl, F_GETFL, F_SETFL, O_NONBLOCK};
 use itertools::Itertools;
 use nix::net::if_::if_nametoindex;
@@ -133,10 +133,7 @@ const CAN_RAW_JOIN_FILTERS: c_int = 6;
 
 
 // get timestamp in a struct timeval (us accuracy)
-// const SIOCGSTAMP: c_int = 0x8906;
-
-// get timestamp in a struct timespec (ns accuracy)
-const SIOCGSTAMPNS: c_int = 0x8907;
+const SIOCGSTAMP: c_int = 0x8906;
 
 /// if set, indicate 29 bit extended format
 pub const EFF_FLAG: u32 = 0x80000000;
@@ -394,18 +391,18 @@ impl CanSocket {
     pub fn read_frame_with_timestamp(&mut self) -> io::Result<(CanFrame, time::SystemTime)> {
         let frame = self.read_frame()?;
 
-        let mut ts: timespec;
+        let mut tv: timeval;
         let rval = unsafe {
             // we initialize tv calling ioctl, passing this responsibility on
-            ts = uninitialized();
-            libc::ioctl(self.fd, SIOCGSTAMPNS as c_ulong, &mut ts as *mut timespec)
+            tv = uninitialized();
+            libc::ioctl(self.fd, SIOCGSTAMP as c_ulong, &mut tv as *mut timeval)
         };
 
         if rval == -1 {
             return Err(io::Error::last_os_error());
         }
 
-        Ok((frame, util::system_time_from_timespec(ts)))
+        Ok((frame, util::system_time_from_timeval(tv)))
     }
 
     /// Write a single can frame.

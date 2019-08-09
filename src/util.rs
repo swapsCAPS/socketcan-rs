@@ -1,4 +1,4 @@
-use libc::{c_int, c_void, setsockopt, socklen_t, timespec};
+use libc::{c_int, c_void, setsockopt, socklen_t, timeval};
 use std::{io, ptr};
 use std::mem::size_of;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -71,11 +71,11 @@ pub fn set_socket_option_mult<T>(fd: c_int,
 }
 
 #[inline]
-pub fn duration_from_timeval(ts: timespec) -> Duration {
-    Duration::new(ts.tv_sec as u64, ts.tv_nsec as u32)
+pub fn duration_from_timeval(tv: timeval) -> Duration {
+    Duration::new(tv.tv_sec as u64, (tv.tv_usec as u32) * 1000)
 }
 
 #[inline]
-pub fn system_time_from_timespec(ts: timespec) -> SystemTime {
-    UNIX_EPOCH + duration_from_timeval(ts)
+pub fn system_time_from_timeval(tv: timeval) -> SystemTime {
+    UNIX_EPOCH + duration_from_timeval(tv)
 }
